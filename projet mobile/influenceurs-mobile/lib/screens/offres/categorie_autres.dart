@@ -1,0 +1,191 @@
+import 'dart:developer';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:projet/providers/offre_provider.dart';
+import 'package:provider/provider.dart';
+import '../../constants/style.dart';
+
+import '../../models/offre.dart';
+import '../../providers/theme_notifier.dart';
+import '../../providers/user_provider.dart';
+import '../../widgets/offre_widget.dart';
+import '../search_screen.dart';
+
+class CategoriesAutres extends StatefulWidget {
+  const CategoriesAutres({super.key});
+
+  @override
+  CategoriesAutresState createState() => CategoriesAutresState();
+}
+
+class CategoriesAutresState extends State<CategoriesAutres> {
+  List<OffreModel> offresAutres = [];
+
+  Future<void> fetchOffresAutres() async {
+    
+    try {
+       QuerySnapshot<Map<String, dynamic>> querySnapshot = await FirebaseFirestore
+        .instance
+        .collection('offres')
+        .where('categories', arrayContains: 'Autres')
+        .where('dateFin',isGreaterThanOrEqualTo: DateTime.now().millisecondsSinceEpoch)
+        .get();
+
+    for (var doc in querySnapshot.docs) {
+      
+      OffreModel offreAutre = OffreModel.fromMap(doc.data());
+      offresAutres.add(offreAutre);
+      // await Future.delayed(const Duration(milliseconds: 1000));
+    }
+    
+    setState(() {});
+    } catch (e) {
+      log('erreur fetchAutres $e');
+    }
+   
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchOffresAutres();
+  }
+
+   bool isSpeaking = false;
+  
+  final FlutterTts flutterTts=FlutterTts();
+  speak(String text) async{
+    try {
+      await flutterTts.setLanguage('fr');
+      await flutterTts.setPitch(0.5);
+      await flutterTts.setVolume(1);
+      
+      await flutterTts.speak(text);
+
+    log('5edmet');
+
+    } catch (e) {
+      log('erreur speak $e');
+    }
+   
+
+  }
+
+   stopSpeaking() async{
+    await flutterTts.stop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var style = context.watch<ThemeNotifier>();
+    var user = context.watch<UserProvider>().currentUser;
+    var offre = context.watch<OffreProvider>();
+    return Scaffold(
+      backgroundColor: style.bgColor,
+      appBar: AppBar(
+        backgroundColor: style.panelColor,
+        elevation: 1,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: red,
+          ),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+        title: Text("Autres", style: style.title.copyWith(fontSize: 20)),
+           actions: [
+          
+          const SizedBox(
+            width: 25,
+          ),
+         GestureDetector(
+  child: Icon(
+    CupertinoIcons.speaker_2_fill,
+    color: style.invertedColor.withOpacity(.8),
+  ),
+  onTap: () async {
+    
+      if (isSpeaking) {
+      // Si la lecture est en cours, mettre en pause
+      stopSpeaking();
+    } else {
+      // Sinon, reprendre la lecture
+          await speak('Cette interface vous permet de visualiser toutes les offers appartenant à la catégorie Autres pour lesquelles vous pouvez postuler à savoir  ${offresAutres.length.toString()} offres. Vous pouvez également effectuer une recherche à partir de la barre de recherche ou bien retourner à l\'interface d\'Accueil grâce à la flêche située à gauche en hait de la page. ');
+
+     
+    }
+    isSpeaking = !isSpeaking; 
+    print('pressed');
+    }
+  
+),
+          const SizedBox(
+            width: 15,
+          ),
+        ],
+      ),
+      body: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 20, bottom: 10),
+              child: SizedBox(
+                height: 50,
+                child: TextFormField(
+                  readOnly: true,
+                  style: style.text18,
+                  decoration: InputDecoration(
+                      // fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      focusedBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(40)),
+                        borderSide: BorderSide(
+                          color: red,
+                        ),
+                      ),
+                      enabledBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(40)),
+                        borderSide: BorderSide(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      hintText: "Effectuez votre recherche par ici",
+                      hintStyle: style.text18
+                          .copyWith(color: style.invertedColor.withOpacity(.8)),
+                      suffixIcon: const Icon(
+                        Icons.search,
+                        color: red,
+                      )),
+                  onTap: () => Navigator.push(context,
+                      CupertinoPageRoute(builder: (_) => const SearchScreen())),
+                ),
+              ),
+            ),
+            Expanded(
+                child: GridView.builder(
+              scrollDirection: Axis.vertical,
+              itemCount: offresAutres.length,
+              physics: const BouncingScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  mainAxisSpacing: 10,
+                  crossAxisCount: 2,
+                  childAspectRatio: 1,
+                  crossAxisSpacing: 10),
+              itemBuilder: (_, index) {
+              //  startOffreListen(offresAutres[index]!.id);
+                return OffreWidget(offre: offresAutres[index]);
+              },
+            )),
+          ],
+        ),
+      ),
+    );
+  }
+}

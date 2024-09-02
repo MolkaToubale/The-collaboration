@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+     <string name="app_name">Projet PFE</string>
+    <string name="facebook_app_id">149421741334562</string>
+    <string name="fb_login_protocol_scheme">4d79a9bbb84254746ca2ab3c1a7ef452</string>
+    <string name="facebook_client_token">987410e85c443d60402f4f5403bb0efe</string>
+</resources>

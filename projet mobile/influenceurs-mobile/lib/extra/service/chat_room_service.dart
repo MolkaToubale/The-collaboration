@@ -1,0 +1,5 @@
+
+
+class ChatRoomService {
+  getFile() async {}
+}
